@@ -1,0 +1,117 @@
+# nftables ruleset for bitcoin-retry-endpoint
+# Managed by Ansible — do not edit manually
+#
+# Simplified perimeter model (UDP-only, no BGP):
+#   * Fabric interface ({{ firewall_fabric_iface }}): NACK receive + retransmit
+#   * Non-fabric interfaces: management only
+#   * Forwarding: disabled
+
+table inet bitcoin-retry-endpoint {
+
+    # ------------------------------------------------------------
+    # Named sets
+    # ------------------------------------------------------------
+    set mgmt_allow_v4 {
+        type ipv4_addr
+        flags interval
+{% if mgmt_cidrs_v4 | length > 0 %}
+        elements = { {{ mgmt_cidrs_v4 | join(', ') }} }
+{% endif %}
+    }
+
+    set mgmt_allow_v6 {
+        type ipv6_addr
+        flags interval
+{% if mgmt_cidrs_v6 | length > 0 %}
+        elements = { {{ mgmt_cidrs_v6 | join(', ') }} }
+{% endif %}
+    }
+
+    # ------------------------------------------------------------
+    # Input chain
+    # ------------------------------------------------------------
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        ct state established,related accept
+        ct state invalid drop
+        iifname "lo" accept
+
+        # ICMPv6 — NDP + MLD + diagnostics
+        icmpv6 type {
+            nd-neighbor-solicit, nd-neighbor-advert,
+            nd-router-solicit, nd-router-advert,
+            mld-listener-query, mld-listener-report,
+            mld-listener-done, mld2-listener-report,
+            echo-request, echo-reply,
+            packet-too-big, parameter-problem, time-exceeded
+        } accept
+
+        # ICMPv4 — minimal, non-fabric only
+        iifname != "{{ firewall_fabric_iface }}" ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable } accept
+
+        # NACK receive — only on fabric interface, only UDP/listen_port
+        iifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ listen_port }} accept
+
+        # Management: SSH + metrics scrape, only from mgmt CIDRs, only on non-fabric
+        iifname != "{{ firewall_fabric_iface }}" ip  saddr @mgmt_allow_v4 tcp dport { 22, {{ firewall_metrics_port }} } accept
+        iifname != "{{ firewall_fabric_iface }}" ip6 saddr @mgmt_allow_v6 tcp dport { 22, {{ firewall_metrics_port }} } accept
+
+{% if ingress_mode | default('ethernet') == 'gre' %}
+        # GRE outer-transport — inbound tunnel encapsulation from remote endpoint
+{% if gre_outer_proto | default('ipv6') == 'ipv4' and gre_remote_ip4 | default('') | length > 0 %}
+        iifname != "{{ firewall_fabric_iface }}" ip  saddr {{ gre_remote_ip4 }} ip  protocol gre accept
+{% elif gre_remote_ip6 | default('') | length > 0 %}
+        iifname != "{{ firewall_fabric_iface }}" ip6 saddr {{ gre_remote_ip6 }} ip6 nexthdr 47 accept
+{% endif %}
+{% endif %}
+
+        counter drop
+    }
+
+    # ------------------------------------------------------------
+    # Output chain
+    # ------------------------------------------------------------
+    chain output {
+        type filter hook output priority 0; policy drop;
+
+        ct state established,related accept
+        oifname "lo" accept
+
+        # ICMPv6
+        icmpv6 type {
+            nd-neighbor-solicit, nd-neighbor-advert,
+            nd-router-solicit,
+            mld-listener-report, mld-listener-done, mld2-listener-report,
+            echo-request, echo-reply,
+            packet-too-big, parameter-problem, time-exceeded
+        } accept
+        oifname != "{{ firewall_fabric_iface }}" ip protocol icmp accept
+
+        # Retransmission egress — unicast UDP to listeners, only on fabric iface
+        oifname "{{ firewall_fabric_iface }}" udp dport {{ egress_port }} accept
+
+{% if ingress_mode | default('ethernet') == 'gre' %}
+        # GRE outer-transport — outbound tunnel encapsulation to remote endpoint
+{% if gre_outer_proto | default('ipv6') == 'ipv4' and gre_remote_ip4 | default('') | length > 0 %}
+        oifname != "{{ firewall_fabric_iface }}" ip  daddr {{ gre_remote_ip4 }} ip  protocol gre accept
+{% elif gre_remote_ip6 | default('') | length > 0 %}
+        oifname != "{{ firewall_fabric_iface }}" ip6 daddr {{ gre_remote_ip6 }} ip6 nexthdr 47 accept
+{% endif %}
+{% endif %}
+
+        # DNS / NTP / package management — non-fabric only
+        oifname != "{{ firewall_fabric_iface }}" udp dport { 53, 123 } accept
+        oifname != "{{ firewall_fabric_iface }}" tcp dport { 53, 80, 443 } accept
+
+        counter drop
+    }
+
+    # ------------------------------------------------------------
+    # Forward chain — always drop
+    # ------------------------------------------------------------
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+        counter drop
+    }
+}

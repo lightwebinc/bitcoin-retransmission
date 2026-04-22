@@ -1,0 +1,47 @@
+---
+# Retry-endpoint networking. Receives NACK via multicast and retransmits via unicast.
+
+- name: Enable IPv6 forwarding via sysctl
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/60-bitcoin-retry-endpoint.conf
+    reload: true
+  loop:
+    - { name: net.ipv6.conf.all.accept_ra, value: "1" }
+    - { name: "net.ipv6.conf.{{ networking_ingress_iface }}.accept_ra", value: "1" }
+
+- name: Deploy netplan config for ethernet ingress
+  ansible.builtin.template:
+    src: netplan-ethernet.yaml.j2
+    dest: /etc/netplan/60-bitcoin-retry-endpoint.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: ingress_mode == 'ethernet'
+  notify: Apply netplan
+
+- name: Deploy netplan config for GRE6 tunnel ingress
+  ansible.builtin.template:
+    src: netplan-gre.yaml.j2
+    dest: /etc/netplan/61-bitcoin-retry-endpoint-gre.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: ingress_mode == 'gre'
+  notify: Apply netplan
+
+- name: Apply multicast route on ingress interface (Linux)
+  ansible.builtin.command:
+    argv:
+      - ip
+      - -6
+      - route
+      - replace
+      - "{{ networking_mc_route_prefix }}"
+      - dev
+      - "{{ networking_ingress_iface }}"
+  register: networking_mc_route_result
+  changed_when: networking_mc_route_result.rc == 0
+  failed_when: false

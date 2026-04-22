@@ -1,0 +1,15 @@
+---
+- name: Deploy nftables ruleset for bitcoin-retry-endpoint
+  ansible.builtin.template:
+    src: bitcoin-retry-endpoint.nft.j2
+    dest: /etc/nftables.d/bitcoin-retry-endpoint.nft
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nftables
+
+- name: Ensure nftables service is enabled and started
+  ansible.builtin.service:
+    name: nftables
+    enabled: true
+    state: started

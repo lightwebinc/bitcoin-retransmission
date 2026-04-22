@@ -1,0 +1,15 @@
+---
+# Simplified firewall for bitcoin-retry-endpoint (UDP-only, no BGP)
+#
+# Perimeter model:
+#   * Fabric interface ({{ firewall_fabric_iface }}): NACK receive + retransmit
+#   * Non-fabric interfaces: management only
+#   * Forwarding: disabled
+
+- name: Configure firewall (Linux nftables)
+  ansible.builtin.include_tasks: linux.yml
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Configure firewall (FreeBSD pf)
+  ansible.builtin.include_tasks: freebsd.yml
+  when: ansible_os_family == 'FreeBSD'

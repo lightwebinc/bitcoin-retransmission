@@ -1,0 +1,12 @@
+---
+- name: Reload nftables
+  ansible.builtin.service:
+    name: nftables
+    state: reloaded
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Reload pf
+  ansible.builtin.service:
+    name: pf
+    state: reloaded
+  when: ansible_os_family == 'FreeBSD'

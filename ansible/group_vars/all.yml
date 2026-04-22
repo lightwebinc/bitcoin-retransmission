@@ -1,0 +1,80 @@
+---
+# ============================================================
+# bitcoin-retransmission Ansible group_vars/all.yml
+# Override any variable per-host in inventory/hosts.yml
+# ============================================================
+
+# ------------------------------------------------------------
+# bitcoin-retry-endpoint source and build
+# ------------------------------------------------------------
+retry_repo: "https://github.com/lightwebinc/bitcoin-retry-endpoint.git"
+retry_version: "main"
+retry_install_dir: "/opt/bitcoin-retry-endpoint"
+retry_bin_dir: "/usr/local/bin"
+retry_user: "bitcoin-retry-endpoint"
+retry_group: "bitcoin-retry-endpoint"
+
+# Go toolchain version (used when building from source)
+go_version: "1.24.5"
+go_install_dir: "/usr/local/go"
+
+# ------------------------------------------------------------
+# Retry-endpoint runtime configuration
+# All flags have env-var equivalents set in the service unit
+# ------------------------------------------------------------
+mc_iface: "eth0"               # Interface for multicast receive
+listen_port: 9300             # UDP port for NACK receive
+nack_port: 9301               # UDP port for NACK send (to listeners)
+egress_iface: "eth0"          # Interface for retransmission egress
+egress_port: 9100             # UDP port for retransmission to listeners
+
+# Multicast configuration
+shard_bits: 2
+mc_scope: "site"              # link | site | org | global
+mc_base_addr: ""              # Optional assigned prefix base
+
+# Cache configuration
+cache_backend: "memory"        # memory | redis
+redis_addr: ""                # Redis address (if cache_backend=redis)
+cache_ttl: "10m"              # Cache TTL
+cache_max_keys: 100000        # Maximum cache entries
+
+# Rate limiting
+rl_ip_rate: "1000/s"          # Per-IP rate limit
+rl_ip_burst: 100              # Per-IP burst
+rl_sender_rate: "10000/s"     # Per-sender rate limit
+rl_sender_burst: 1000         # Per-sender burst
+rl_global_rate: "100000/s"    # Global rate limit
+rl_global_burst: 10000        # Global burst
+
+# Runtime / observability
+num_workers: 0               # 0 = runtime.NumCPU()
+metrics_addr: ":9400"         # Metrics endpoint
+otlp_endpoint: ""             # OTLP gRPC push; empty disables
+otlp_interval: "30s"          # OTLP metric export cadence
+drain_timeout: "0s"           # Pre-shutdown drain
+instance_id: ""               # OTel service.instance.id; empty = hostname
+retry_debug: false
+
+# ------------------------------------------------------------
+# Firewall perimeter (simplified for UDP)
+# Default ON; set false for labs where broader connectivity is desired.
+# ------------------------------------------------------------
+enable_firewall: true
+mgmt_cidrs_v4: []             # SSH / metrics scrape allow-list (IPv4). MUST be set per deployment.
+mgmt_cidrs_v6: []             # SSH / metrics scrape allow-list (IPv6).
+
+# ------------------------------------------------------------
+# Networking
+# ------------------------------------------------------------
+ingress_mode: "ethernet"      # ethernet | gre
+ingress_iface: "eth0"         # NIC for multicast receive. MUST be set per-host
+
+# GRE tunnel (only used when ingress_mode == gre)
+gre_outer_proto: "ipv6"       # ipv6 | ipv4
+gre_iface: "gre6-retry"       # Tunnel interface name
+gre_inner_ipv6: ""            # IPv6 address/prefix assigned to tunnel
+gre_local_ip6: ""             # Local outer endpoint (ipv6 outer)
+gre_remote_ip6: ""            # Remote outer endpoint (ipv6 outer)
+gre_local_ip4: ""             # Local outer endpoint (ipv4 outer)
+gre_remote_ip4: ""            # Remote outer endpoint (ipv4 outer)

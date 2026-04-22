@@ -1,0 +1,67 @@
+# pf ruleset for bitcoin-retry-endpoint
+# Managed by Ansible — do not edit manually
+#
+# Simplified perimeter model (UDP-only, no BGP):
+#   * Fabric interface ({{ firewall_fabric_iface }}): NACK receive + retransmit
+#   * Non-fabric interfaces: management only
+#   * Forwarding: disabled
+
+# Variables
+fabric_iface="{{ firewall_fabric_iface }}"
+listen_port={{ listen_port }}
+egress_port={{ egress_port }}
+metrics_port={{ firewall_metrics_port }}
+
+# Management CIDRs
+{% if mgmt_cidrs_v4 | length > 0 %}
+{% for cidr in mgmt_cidrs_v4 %}
+mgmt_v4_{{ loop.index }}="{{ cidr }}"
+{% endfor %}
+{% endif %}
+{% if mgmt_cidrs_v6 | length > 0 %}
+{% for cidr in mgmt_cidrs_v6 %}
+mgmt_v6_{{ loop.index }}="{{ cidr }}"
+{% endfor %}
+{% endif %}
+
+# Block all by default
+set block-policy return
+block all
+
+# Allow loopback
+set skip on lo0
+
+# Allow established connections
+pass out quick keep state
+pass in quick keep state
+
+# Allow ICMPv6
+pass in proto ipv6-icmp all
+pass out proto ipv6-icmp all
+
+# Allow ICMPv4 on non-fabric
+pass in on ! $fabric_iface inet proto icmp all icmp-type { echoreq, echorep, unreach }
+pass out on ! $fabric_iface inet proto icmp all icmp-type { echoreq, echorep, unreach }
+
+# Allow NACK receive on fabric interface
+pass in on $fabric_iface inet6 proto udp from any to ff00::/8 port $listen_port
+
+# Allow retransmission egress on fabric interface
+pass out on $fabric_iface inet6 proto udp to any port $egress_port
+
+# Allow management traffic from specified CIDRs
+{% for cidr in mgmt_cidrs_v4 %}
+pass in on ! $fabric_iface inet proto tcp from {{ cidr }} to any port { 22, $metrics_port }
+pass out on ! $fabric_iface inet proto tcp to {{ cidr }} port { 22, $metrics_port }
+{% endfor %}
+{% for cidr in mgmt_cidrs_v6 %}
+pass in on ! $fabric_iface inet6 proto tcp from {{ cidr }} to any port { 22, $metrics_port }
+pass out on ! $fabric_iface inet6 proto tcp to {{ cidr }} port { 22, $metrics_port }
+{% endfor %}
+
+# Allow DNS/NTP/HTTP on non-fabric
+pass out on ! $fabric_iface inet proto udp to any port { 53, 123 }
+pass out on ! $fabric_iface inet proto tcp to any port { 53, 80, 443 }
+
+# Block forwarding
+block forward all

@@ -1,0 +1,19 @@
+---
+- name: Deploy bitcoin-retry-endpoint nodes
+  hosts: retry_endpoint_nodes
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: common
+      tags: [common]
+
+    - role: bitcoin-retry-endpoint
+      tags: [retry_endpoint]
+
+    - role: networking
+      tags: [networking]
+
+    - role: firewall
+      tags: [firewall]
+      when: enable_firewall | bool

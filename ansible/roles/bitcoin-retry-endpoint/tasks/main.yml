@@ -1,0 +1,127 @@
+---
+- name: Create retry-endpoint system group
+  ansible.builtin.group:
+    name: "{{ retry_group }}"
+    system: true
+    state: present
+
+- name: Create retry-endpoint system user
+  ansible.builtin.user:
+    name: "{{ retry_user }}"
+    group: "{{ retry_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ retry_install_dir }}"
+    create_home: false
+    state: present
+
+- name: Create retry-endpoint install directory
+  ansible.builtin.file:
+    path: "{{ retry_install_dir }}"
+    state: directory
+    owner: "{{ retry_user }}"
+    group: "{{ retry_group }}"
+    mode: "0755"
+
+- name: Mark install directory as git safe.directory
+  community.general.git_config:
+    name: safe.directory
+    scope: global
+    value: "{{ retry_install_dir }}"
+
+- name: Clone / update bitcoin-retry-endpoint repository
+  ansible.builtin.git:
+    repo: "{{ retry_repo }}"
+    dest: "{{ retry_install_dir }}"
+    version: "{{ retry_version }}"
+    force: false
+
+- name: Set ownership of install directory after clone
+  ansible.builtin.file:
+    path: "{{ retry_install_dir }}"
+    owner: "{{ retry_user }}"
+    group: "{{ retry_group }}"
+    recurse: true
+
+- name: Build bitcoin-retry-endpoint binary
+  ansible.builtin.command:
+    cmd: "{{ go_install_dir }}/bin/go build -buildvcs=false -o {{ retry_install_dir }}/bitcoin-retry-endpoint ."
+    chdir: "{{ retry_install_dir }}"
+  environment:
+    PATH: "{{ go_install_dir }}/bin:{{ ansible_env.PATH }}"
+    CGO_ENABLED: "0"
+    GOOS: "{{ 'freebsd' if ansible_os_family == 'FreeBSD' else 'linux' }}"
+    GOARCH: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    HOME: "/tmp"
+    GOPATH: "/tmp/gopath"
+    GOCACHE: "/tmp/gocache"
+  changed_when: true
+
+- name: Install binary to system bin dir
+  ansible.builtin.copy:
+    src: "{{ retry_install_dir }}/bitcoin-retry-endpoint"
+    dest: "{{ retry_bin_dir }}/bitcoin-retry-endpoint"
+    remote_src: true
+    owner: root
+    group: "{{ retry_group }}"
+    mode: "0755"
+  notify: Restart bitcoin-retry-endpoint
+
+- name: Create config directory
+  ansible.builtin.file:
+    path: "{{ '/usr/local/etc' if ansible_os_family == 'FreeBSD' else '/etc/bitcoin-retry-endpoint' }}"
+    state: directory
+    owner: root
+    group: "{{ retry_group }}"
+    mode: "0750"
+
+- name: Deploy environment config file
+  ansible.builtin.template:
+    src: config.env.j2
+    dest: "{{ '/usr/local/etc/bitcoin-retry-endpoint.conf' if ansible_os_family == 'FreeBSD' else '/etc/bitcoin-retry-endpoint/config.env' }}"
+    owner: root
+    group: "{{ retry_group }}"
+    mode: "0640"
+  notify: Restart bitcoin-retry-endpoint
+
+- name: Deploy systemd service unit (Linux)
+  ansible.builtin.template:
+    src: bitcoin-retry-endpoint.service.j2
+    dest: /etc/systemd/system/bitcoin-retry-endpoint.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: ansible_os_family != 'FreeBSD'
+  notify:
+    - Reload systemd
+    - Restart bitcoin-retry-endpoint
+
+- name: Deploy rc.d service script (FreeBSD)
+  ansible.builtin.template:
+    src: bitcoin_retry_endpoint.rc.j2
+    dest: /usr/local/etc/rc.d/bitcoin_retry_endpoint
+    owner: root
+    group: wheel
+    mode: "0755"
+  when: ansible_os_family == 'FreeBSD'
+  notify: Restart bitcoin-retry-endpoint
+
+- name: Enable and start bitcoin-retry-endpoint (Linux)
+  ansible.builtin.systemd:
+    name: bitcoin-retry-endpoint
+    enabled: true
+    state: started
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Enable bitcoin-retry-endpoint in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: '^bitcoin_retry_endpoint_enable='
+    line: 'bitcoin_retry_endpoint_enable="YES"'
+  when: ansible_os_family == 'FreeBSD'
+
+- name: Start bitcoin-retry-endpoint (FreeBSD)
+  ansible.builtin.service:
+    name: bitcoin_retry_endpoint
+    state: started
+  when: ansible_os_family == 'FreeBSD'

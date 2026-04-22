@@ -1,0 +1,4 @@
+---
+# Derived facts for firewall role
+firewall_fabric_iface: "{{ mc_iface }}"
+firewall_metrics_port: "{{ metrics_addr | regex_replace('^:(\\d+)$', '\\1') }}"
