@@ -22,15 +22,15 @@ locals {
       retry_version = var.retry_version
 
       # Retry-endpoint runtime
-      mc_iface          = var.mc_iface
-      listen_port       = tostring(var.listen_port)
-      nack_port         = tostring(var.nack_port)
-      egress_iface      = var.egress_iface
-      egress_port       = tostring(var.egress_port)
-      shard_bits        = tostring(var.shard_bits)
-      mc_scope          = var.mc_scope
-      mc_base_addr      = var.mc_base_addr
-      mc_route_prefix   = var.mc_route_prefix
+      mc_iface        = var.mc_iface
+      listen_port     = tostring(var.listen_port)
+      nack_port       = tostring(var.nack_port)
+      egress_iface    = var.egress_iface
+      egress_port     = tostring(var.egress_port)
+      shard_bits      = tostring(var.shard_bits)
+      mc_scope        = var.mc_scope
+      mc_base_addr    = var.mc_base_addr
+      mc_route_prefix = var.mc_route_prefix
 
       # Cache
       cache_backend  = var.cache_backend
@@ -39,17 +39,17 @@ locals {
       cache_max_keys = tostring(var.cache_max_keys)
 
       # Rate limiting
-      rl_ip_rate       = var.rl_ip_rate
-      rl_ip_burst      = tostring(var.rl_ip_burst)
-      rl_sender_rate   = var.rl_sender_rate
-      rl_sender_burst  = tostring(var.rl_sender_burst)
-      rl_global_rate   = var.rl_global_rate
-      rl_global_burst  = tostring(var.rl_global_burst)
+      rl_ip_rate      = var.rl_ip_rate
+      rl_ip_burst     = tostring(var.rl_ip_burst)
+      rl_sender_rate  = var.rl_sender_rate
+      rl_sender_burst = tostring(var.rl_sender_burst)
+      rl_global_rate  = var.rl_global_rate
+      rl_global_burst = tostring(var.rl_global_burst)
 
       # Observability
-      metrics_addr    = var.metrics_addr
-      otlp_endpoint   = var.otlp_endpoint
-      otlp_interval   = var.otlp_interval
+      metrics_addr  = var.metrics_addr
+      otlp_endpoint = var.otlp_endpoint
+      otlp_interval = var.otlp_interval
 
       # Networking
       ingress_mode   = var.ingress_mode
