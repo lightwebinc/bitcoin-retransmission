@@ -65,12 +65,12 @@ Copy `examples/generic/` or `examples/aws-ec2/` and adapt:
 
 ## Defaults worth double-checking
 
-| Variable          | Default    | Why                                             |
-|-------------------|------------|--------------------------------------------------|
-| `listen_port`     | `9300`     | NACK receive port                               |
-| `nack_port`       | `9301`     | NACK send port to listeners                      |
-| `egress_port`     | `9100`     | Retransmission port to listeners                 |
-| `metrics_addr`    | `:9400`    | Avoid collision with listener (`:9200`) and proxy (`:9100`) |
-| `enable_firewall` | `true`     | Default-on for security                          |
-| `otlp_interval`   | `"30s"`    | Preserves prior hardcoded value                  |
-| `cache_backend`   | `memory`   | In-memory cache by default                       |
+| Variable | Default | Why |
+|-------------------|----------|-------------------------------------------------------------|
+| `listen_port` | `9300` | NACK receive port |
+| `nack_port` | `9301` | NACK send port to listeners |
+| `egress_port` | `9100` | Retransmission port to listeners |
+| `metrics_addr` | `:9400` | Avoid collision with listener (`:9200`) and proxy (`:9100`) |
+| `enable_firewall` | `true` | Default-on for security |
+| `otlp_interval` | `"30s"` | Preserves prior hardcoded value |
+| `cache_backend` | `memory` | In-memory cache by default |

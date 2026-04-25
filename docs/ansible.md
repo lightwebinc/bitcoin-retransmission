@@ -40,27 +40,27 @@ Firewall runs **after** networking so interface names resolve.
 
 See `ansible/group_vars/all.yml` for the full list. Quick reference:
 
-| Variable           | Default                  | Notes                                               |
-|--------------------|--------------------------|------------------------------------------------------|
-| `mc_iface`         | `eth0`                   | **Must be set per-host** (group_vars precedence)     |
-| `ingress_mode`     | `ethernet`               | Or `gre`                                             |
-| `listen_port`      | `9300`                   | NACK receive port                                    |
-| `nack_port`        | `9301`                   | NACK send port to listeners                          |
-| `egress_iface`     | `eth0`                   | Retransmission egress interface                      |
-| `egress_port`      | `9100`                   | Retransmission port to listeners                     |
-| `shard_bits`       | `2`                      | Must match fabric                                    |
-| `cache_backend`    | `memory`                 | Or `redis`                                           |
-| `redis_addr`       | `""`                     | Redis address (if cache_backend=redis)               |
-| `cache_ttl`        | `10m`                    | Cache entry lifetime                                 |
-| `cache_max_keys`   | `100000`                 | Maximum cache entries                               |
-| `rl_ip_rate`       | `1000/s`                 | Per-IP rate limit                                    |
-| `rl_sender_rate`   | `10000/s`                | Per-sender rate limit                                |
-| `rl_global_rate`   | `100000/s`               | Global rate limit                                    |
-| `metrics_addr`     | `:9400`                  |                                                      |
-| `otlp_endpoint`    | `""`                     |                                                      |
-| `otlp_interval`    | `30s`                    |                                                      |
-| `enable_firewall`  | `true`                   | Set `false` for labs only                            |
-| `mgmt_cidrs_v4`    | `[]`                     | **Must be set per-host**; SSH + metrics allow-list   |
+| Variable | Default | Notes |
+|-------------------|------------|----------------------------------------------------|
+| `mc_iface` | `eth0` | **Must be set per-host** (group_vars precedence) |
+| `ingress_mode` | `ethernet` | Or `gre` |
+| `listen_port` | `9300` | NACK receive port |
+| `nack_port` | `9301` | NACK send port to listeners |
+| `egress_iface` | `eth0` | Retransmission egress interface |
+| `egress_port` | `9100` | Retransmission port to listeners |
+| `shard_bits` | `2` | Must match fabric |
+| `cache_backend` | `memory` | Or `redis` |
+| `redis_addr` | `""` | Redis address (if cache_backend=redis) |
+| `cache_ttl` | `10m` | Cache entry lifetime |
+| `cache_max_keys` | `100000` | Maximum cache entries |
+| `rl_ip_rate` | `1000/s` | Per-IP rate limit |
+| `rl_sender_rate` | `10000/s` | Per-sender rate limit |
+| `rl_global_rate` | `100000/s` | Global rate limit |
+| `metrics_addr` | `:9400` |  |
+| `otlp_endpoint` | `""` |  |
+| `otlp_interval` | `30s` |  |
+| `enable_firewall` | `true` | Set `false` for labs only |
+| `mgmt_cidrs_v4` | `[]` | **Must be set per-host**; SSH + metrics allow-list |
 
 ## Per-host overrides
 

@@ -41,15 +41,15 @@ terraform init && terraform apply
 
 ## Relationship to other repos
 
-| Concern        | `bitcoin-retransmission` (this repo) | `bitcoin-listener` | `bitcoin-ingress` |
-|----------------|--------------------------------------|---------------------|-------------------|
-| Direction      | RX NACK → TX re-multicast            | RX multicast       | TX multicast      |
-| Primary iface  | `mc_iface` (receive)                 | `ingress_iface`    | `egress_iface`    |
-| Metrics port   | `:9400`                              | `:9200`            | `:9100`           |
-| Listen port    | `9300` (NACK receive)                 | `9001`             | `9000`            |
-| Egress port    | `9100` (re-multicast)                | `egress_addr`      | N/A               |
-| BGP            | **No**                               | Optional           | Optional          |
-| Firewall       | Simplified UDP                       | Full perimeter     | n/a               |
+| Concern | `bitcoin-retransmission` (this repo) | `bitcoin-listener` | `bitcoin-ingress` |
+|---------------|--------------------------------------|--------------------|-------------------|
+| Direction | RX NACK → TX re-multicast | RX multicast | TX multicast |
+| Primary iface | `mc_iface` (receive) | `ingress_iface` | `egress_iface` |
+| Metrics port | `:9400` | `:9200` | `:9100` |
+| Listen port | `9300` (NACK receive) | `9001` | `9000` |
+| Egress port | `9100` (re-multicast) | `egress_addr` | N/A |
+| BGP | **No** | Optional | Optional |
+| Firewall | Simplified UDP | Full perimeter | n/a |
 
 ## License
 

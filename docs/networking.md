@@ -49,12 +49,12 @@ Then set `mc_iface: gre6-retry` per-host in the inventory.
 The retry-endpoint needs a multicast route prefix for the receive interface.
 If `mc_route_prefix` is unset, it's auto-derived from `mc_scope`:
 
-| `mc_scope` | Prefix   |
-|------------|----------|
-| `link`     | `ff02::/16` |
-| `site`     | `ff05::/16` |
-| `org`      | `ff08::/16` |
-| `global`   | `ff0e::/16` |
+| `mc_scope` | Prefix |
+|------------|-------------|
+| `link` | `ff02::/16` |
+| `site` | `ff05::/16` |
+| `org` | `ff08::/16` |
+| `global` | `ff0e::/16` |
 
 The `networking` role installs this route via:
 
