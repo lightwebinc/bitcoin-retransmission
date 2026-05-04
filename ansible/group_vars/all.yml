@@ -47,6 +47,18 @@ rl_sender_burst: 1000         # Per-sender burst
 rl_global_rate: "100000/s"    # Global rate limit
 rl_global_burst: 10000        # Global burst
 
+# Beacon configuration (BRC-125 endpoint discovery)
+beacon_enabled: true          # Enable ADVERT beacon multicasting
+beacon_tier: 0                # 0 = closest to source
+beacon_preference: 128        # Weighting within tier; higher = more preferred
+beacon_interval: "60s"        # Beacon multicast interval
+beacon_scope: "site"          # site | global | both
+beacon_flags_unicast: false   # Advertise unicast retransmit capability
+beacon_flags_multicast: true  # Advertise multicast retransmit capability
+beacon_flags_draining: false  # Set true during planned maintenance
+suppress_ack: false           # Suppress ACK responses (high-volume mode)
+suppress_miss: false          # Suppress MISS responses
+
 # Runtime / observability
 num_workers: 0               # 0 = runtime.NumCPU()
 metrics_addr: ":9400"         # Metrics endpoint
