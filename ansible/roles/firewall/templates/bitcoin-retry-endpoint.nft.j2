@@ -96,9 +96,14 @@ table inet bitcoin-retry-endpoint {
         oifname != "{{ firewall_fabric_iface }}" ip protocol icmp accept
 
         # Retransmission egress — fabric iface, multicast UDP to listeners on
-        # egress_port. MISS/ACK unicast responses are matched by ct established
-        # against the inbound NACK conntrack tuple.
-        oifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ egress_port }} accept
+        # egress_port.  Beacon ADVERT multicasts go to nack_port (control group).
+        oifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport { {{ egress_port }}, {{ nack_port }} } accept
+
+        # Unicast ACK/MISS responses — sent from the NACK listening socket
+        # (source port = nack_port) back to the NACK originator.
+        # Explicit rule avoids reliance on conntrack which is unreliable in
+        # some environments (LXD VMs, certain kernel configs).
+        oifname "{{ firewall_fabric_iface }}" udp sport {{ nack_port }} accept
 
 {% if ingress_mode | default('ethernet') == 'gre' %}
         # GRE outer-transport — outbound tunnel encapsulation to remote endpoint

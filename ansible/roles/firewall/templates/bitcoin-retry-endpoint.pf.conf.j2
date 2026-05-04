@@ -50,8 +50,11 @@ pass in on $fabric_iface inet6 proto udp from any to ff00::/8 port $listen_port
 # NACK request ingress on fabric interface (unicast UDP to nack_port)
 pass in on $fabric_iface inet6 proto udp to any port $nack_port
 
-# Multicast retransmission egress on fabric interface
-pass out on $fabric_iface inet6 proto udp to ff00::/8 port $egress_port
+# Multicast retransmission + beacon ADVERT egress on fabric interface
+pass out on $fabric_iface inet6 proto udp to ff00::/8 port { $egress_port, $nack_port }
+
+# Unicast ACK/MISS responses from NACK listening socket
+pass out on $fabric_iface inet6 proto udp from any port $nack_port
 
 # Allow management traffic from specified CIDRs
 {% for cidr in mgmt_cidrs_v4 %}
