@@ -19,7 +19,9 @@
     owner: root
     group: root
     mode: "0600"
-  when: ingress_mode == 'ethernet'
+  when:
+    - ingress_mode == 'ethernet'
+    - manage_netplan | default(true) | bool
   notify: Apply netplan
 
 - name: Deploy netplan config for GRE6 tunnel ingress
@@ -29,7 +31,9 @@
     owner: root
     group: root
     mode: "0600"
-  when: ingress_mode == 'gre'
+  when:
+    - ingress_mode == 'gre'
+    - manage_netplan | default(true) | bool
   notify: Apply netplan
 
 - name: Apply multicast route on ingress interface (Linux)

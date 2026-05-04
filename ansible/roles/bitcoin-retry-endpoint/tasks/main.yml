@@ -35,6 +35,16 @@
     dest: "{{ retry_install_dir }}"
     version: "{{ retry_version }}"
     force: false
+  when: retry_local_binary | default('') | length == 0
+
+- name: Push pre-built retry-endpoint binary (skips git/build)
+  ansible.builtin.copy:
+    src: "{{ retry_local_binary }}"
+    dest: "{{ retry_install_dir }}/bitcoin-retry-endpoint"
+    owner: "{{ retry_user }}"
+    group: "{{ retry_group }}"
+    mode: "0755"
+  when: retry_local_binary | default('') | length > 0
 
 - name: Set ownership of install directory after clone
   ansible.builtin.file:
@@ -42,6 +52,13 @@
     owner: "{{ retry_user }}"
     group: "{{ retry_group }}"
     recurse: true
+  when: retry_local_binary | default('') | length == 0
+
+- name: Stat existing retry-endpoint binary in install dir
+  ansible.builtin.stat:
+    path: "{{ retry_install_dir }}/bitcoin-retry-endpoint"
+  register: retry_binary_stat
+  when: retry_local_binary | default('') | length == 0
 
 - name: Build bitcoin-retry-endpoint binary
   ansible.builtin.command:
@@ -56,6 +73,16 @@
     GOPATH: "/tmp/gopath"
     GOCACHE: "/tmp/gocache"
   changed_when: true
+  when:
+    - retry_local_binary | default('') | length == 0
+    - not retry_binary_stat.stat.exists or (retry_force_build | default(false) | bool)
+
+- name: Set ownership on pushed/built binary
+  ansible.builtin.file:
+    path: "{{ retry_install_dir }}/bitcoin-retry-endpoint"
+    owner: "{{ retry_user }}"
+    group: "{{ retry_group }}"
+    mode: "0755"
 
 - name: Install binary to system bin dir
   ansible.builtin.copy:

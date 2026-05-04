@@ -1,0 +1,20 @@
+# Managed by Ansible (bitcoin-retry-endpoint) — do not edit manually
+#
+# Ingress interface: receives multicast frames + unicast NACKs from the
+# fabric, and emits multicast retransmits + unicast MISS/ACK responses.
+#
+# The fabric is IPv6-only, so receive requires only dhcp6 + accept-ra.
+# dhcp4 is enabled by default because single-NIC deployments typically
+# carry management traffic on the same interface. On dedicated-fabric
+# (multi-NIC / lab) deployments, set `ingress_dhcp4: false` to make the
+# interface IPv6-only.
+network:
+  version: 2
+  ethernets:
+    {{ networking_ingress_iface }}:
+      dhcp4: {{ (ingress_dhcp4 | default(true)) | bool | ternary('true', 'false') }}
+      dhcp6: true
+      accept-ra: true
+      routes:
+        - to: "{{ networking_mc_route_prefix }}"
+          scope: link

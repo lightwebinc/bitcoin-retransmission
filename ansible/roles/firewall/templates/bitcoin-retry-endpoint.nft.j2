@@ -2,8 +2,12 @@
 # Managed by Ansible — do not edit manually
 #
 # Simplified perimeter model (UDP-only, no BGP):
-#   * Fabric interface ({{ firewall_fabric_iface }}): NACK receive + retransmit
-#   * Non-fabric interfaces: management only
+#   * Fabric interface ({{ firewall_fabric_iface }}):
+#       - inbound multicast frames on udp/{{ listen_port }} (listen_port)
+#       - inbound unicast NACKs on udp/{{ nack_port }} (nack_port)
+#       - outbound multicast retransmits on udp/{{ egress_port }} (egress_port)
+#       - outbound unicast MISS/ACK responses (ct established)
+#   * Non-fabric interfaces: management only (SSH + metrics scrape)
 #   * Forwarding: disabled
 
 table inet bitcoin-retry-endpoint {
@@ -50,8 +54,11 @@ table inet bitcoin-retry-endpoint {
         # ICMPv4 — minimal, non-fabric only
         iifname != "{{ firewall_fabric_iface }}" ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable } accept
 
-        # NACK receive — only on fabric interface, only UDP/listen_port
+        # Multicast frame ingress — fabric iface, multicast destination, listen_port
         iifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ listen_port }} accept
+
+        # NACK request ingress — fabric iface, unicast UDP to nack_port
+        iifname "{{ firewall_fabric_iface }}" udp dport {{ nack_port }} accept
 
         # Management: SSH + metrics scrape, only from mgmt CIDRs, only on non-fabric
         iifname != "{{ firewall_fabric_iface }}" ip  saddr @mgmt_allow_v4 tcp dport { 22, {{ firewall_metrics_port }} } accept
@@ -88,8 +95,10 @@ table inet bitcoin-retry-endpoint {
         } accept
         oifname != "{{ firewall_fabric_iface }}" ip protocol icmp accept
 
-        # Retransmission egress — unicast UDP to listeners, only on fabric iface
-        oifname "{{ firewall_fabric_iface }}" udp dport {{ egress_port }} accept
+        # Retransmission egress — fabric iface, multicast UDP to listeners on
+        # egress_port. MISS/ACK unicast responses are matched by ct established
+        # against the inbound NACK conntrack tuple.
+        oifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ egress_port }} accept
 
 {% if ingress_mode | default('ethernet') == 'gre' %}
         # GRE outer-transport — outbound tunnel encapsulation to remote endpoint

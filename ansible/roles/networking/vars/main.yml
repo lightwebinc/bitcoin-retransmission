@@ -2,9 +2,10 @@
 # Derived facts for networking role
 networking_ingress_iface: "{{ ingress_iface if ingress_iface is string else ingress_iface[0] }}"
 
-# Auto-derive multicast route prefix from mc_scope if not set
+# Auto-derive multicast route prefix from mc_scope if mc_route_prefix is not set.
+# `mc_route_prefix` is optional — default to '' to keep the ternary safe.
 networking_mc_route_prefix: >-
-  {{ mc_route_prefix if mc_route_prefix | length > 0 else
+  {{ mc_route_prefix if (mc_route_prefix | default('') | length) > 0 else
   ('ff02::/16' if mc_scope == 'link' else
   'ff05::/16' if mc_scope == 'site' else
   'ff08::/16' if mc_scope == 'org' else

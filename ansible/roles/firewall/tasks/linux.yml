@@ -1,8 +1,27 @@
 ---
+- name: Ensure nftables include directory exists
+  ansible.builtin.file:
+    path: /etc/nftables.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Deploy nftables ruleset for bitcoin-retry-endpoint
   ansible.builtin.template:
     src: bitcoin-retry-endpoint.nft.j2
-    dest: /etc/nftables.d/bitcoin-retry-endpoint.nft
+    dest: /etc/nftables.d/60-bitcoin-retry-endpoint.nft
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nftables
+
+- name: Ensure /etc/nftables.conf includes the retry-endpoint fragment
+  ansible.builtin.lineinfile:
+    path: /etc/nftables.conf
+    line: 'include "/etc/nftables.d/*.nft"'
+    insertafter: EOF
+    create: true
     owner: root
     group: root
     mode: "0644"

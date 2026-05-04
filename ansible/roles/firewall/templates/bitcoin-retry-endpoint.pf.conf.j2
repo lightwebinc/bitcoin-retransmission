@@ -9,6 +9,7 @@
 # Variables
 fabric_iface="{{ firewall_fabric_iface }}"
 listen_port={{ listen_port }}
+nack_port={{ nack_port }}
 egress_port={{ egress_port }}
 metrics_port={{ firewall_metrics_port }}
 
@@ -43,11 +44,14 @@ pass out proto ipv6-icmp all
 pass in on ! $fabric_iface inet proto icmp all icmp-type { echoreq, echorep, unreach }
 pass out on ! $fabric_iface inet proto icmp all icmp-type { echoreq, echorep, unreach }
 
-# Allow NACK receive on fabric interface
+# Multicast frame ingress on fabric interface
 pass in on $fabric_iface inet6 proto udp from any to ff00::/8 port $listen_port
 
-# Allow retransmission egress on fabric interface
-pass out on $fabric_iface inet6 proto udp to any port $egress_port
+# NACK request ingress on fabric interface (unicast UDP to nack_port)
+pass in on $fabric_iface inet6 proto udp to any port $nack_port
+
+# Multicast retransmission egress on fabric interface
+pass out on $fabric_iface inet6 proto udp to ff00::/8 port $egress_port
 
 # Allow management traffic from specified CIDRs
 {% for cidr in mgmt_cidrs_v4 %}
