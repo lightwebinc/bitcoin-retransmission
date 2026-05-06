@@ -22,16 +22,18 @@ missing data.
 
 ## Data plane
 
-1. **NACK receive** — Listeners send 64-byte NACK datagrams via UDP to
-   `retry-endpoint` nodes on port `listen_port` (default 9300). NACKs are
-   multicast over the fabric and received on `mc_iface`.
-2. **Cache lookup** — Each NACK contains a `(TxID, SeqNum, SubtreeID)`
-   triplet. The retry-endpoint checks its in-memory cache (or Redis backend)
-   for the missing frame.
-3. **Rate limiting** — Per-IP, per-sender, and global rate limits protect
-   against NACK storms.
-4. **Retransmission** — Cached frames are re-multicasted via UDP on
-   `egress_port` (default 9100) to the fabric, where listeners receive them
+1. **NACK receive** — Listeners send 24-byte NACK datagrams via unicast UDP to
+   `retry-endpoint` nodes on port `nack_port` (default 9300). Each NACK carries
+   a `LookupType` (by PrevSeq or by CurSeq) and 8-byte `LookupSeq` (XXH64).
+2. **Cache lookup** — The retry-endpoint performs dual-index lookup: primary by
+   `CurSeq` (direct hit) or secondary by `PrevSeq` (pointer to CurSeq). Cache
+   backend is in-memory (freecache, 60 s TTL) or external Redis.
+3. **Rate limiting** — Per-IP token bucket and per-LookupSeq sliding window
+   protect against NACK storms.
+4. **ACK/MISS response** — 16-byte unicast response to the NACK sender: ACK if
+   retransmit dispatched, MISS if not in cache (triggers listener escalation).
+5. **Retransmission** — Cached frames are re-multicasted via UDP on
+   `egress_port` (default 9001) to the fabric, where listeners receive them
    on their normal multicast path.
 
 ## Cache backends

@@ -36,7 +36,7 @@ mc_base_addr: ""              # Optional assigned prefix base
 # Cache configuration
 cache_backend: "memory"        # memory | redis
 redis_addr: ""                # Redis address (if cache_backend=redis)
-cache_ttl: "10m"              # Cache TTL
+cache_ttl: "60s"              # Cache TTL
 cache_max_keys: 100000        # Maximum cache entries
 
 # Rate limiting
@@ -47,8 +47,8 @@ rl_sender_burst: 1000         # Per-sender burst (unused by binary, kept for sym
 rl_global_rate: 100000        # Global rate limit (unused by binary)
 rl_global_burst: 10000        # Global burst (unused by binary)
 rl_sender_window: "1m"        # Per-sender sliding window
-rl_sequence_max: 100          # Max requests per SequenceID per sliding window
-rl_sequence_window: "1m"      # Per-SequenceID sliding window
+rl_sequence_max: 100          # Max requests per LookupSeq per sliding window
+rl_sequence_window: "1m"      # Per-LookupSeq sliding window
 
 # Beacon configuration (BRC-TBD-retransmission endpoint discovery)
 nack_addr: ""                 # Explicit IPv6 for NACK bind + ADVERT; empty = auto-detect
