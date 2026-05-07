@@ -42,15 +42,14 @@ cache_max_keys: 100000        # Maximum cache entries
 # Rate limiting
 rl_ip_rate: 1000              # Per-IP rate limit (tokens/sec, float)
 rl_ip_burst: 100              # Per-IP burst
-rl_sender_rate: 10000         # Per-sender rate limit (req/window, float)
-rl_sender_burst: 1000         # Per-sender burst (unused by binary, kept for symmetry)
-rl_global_rate: 100000        # Global rate limit (unused by binary)
-rl_global_burst: 10000        # Global burst (unused by binary)
-rl_sender_window: "1m"        # Per-sender sliding window
+rl_chain_rate: 500            # Max NACKs per window per (srcIP, chainID)
+rl_chain_window: "1m"         # Sliding window for per-chain NACK limiter
 rl_sequence_max: 100          # Max requests per LookupSeq per sliding window
 rl_sequence_window: "1m"      # Per-LookupSeq sliding window
+rl_group_rate: 200            # Retransmits per second per (srcIP, groupIdx)
+rl_group_burst: 50            # Burst size per (srcIP, groupIdx)
 
-# Beacon configuration (BRC-TBD-retransmission endpoint discovery)
+# Beacon configuration (BRC-126 endpoint discovery)
 nack_addr: ""                 # Explicit IPv6 for NACK bind + ADVERT; empty = auto-detect
 beacon_enabled: true          # Enable ADVERT beacon multicasting
 beacon_tier: 0                # 0 = closest to source

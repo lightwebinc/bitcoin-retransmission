@@ -28,8 +28,8 @@ missing data.
 2. **Cache lookup** — The retry-endpoint performs dual-index lookup: primary by
    `CurSeq` (direct hit) or secondary by `PrevSeq` (pointer to CurSeq). Cache
    backend is in-memory (freecache, 60 s TTL) or external Redis.
-3. **Rate limiting** — Per-IP token bucket and per-LookupSeq sliding window
-   protect against NACK storms.
+3. **Rate limiting** — Multi-tier rate limiting (per-IP, per-chain, per-sequence
+   pre-lookup; per-group post-lookup) protects against NACK storms.
 4. **ACK/MISS response** — 16-byte unicast response to the NACK sender: ACK if
    retransmit dispatched, MISS if not in cache (triggers listener escalation).
 5. **Retransmission** — Cached frames are re-multicasted via UDP on
@@ -64,13 +64,13 @@ sent it.
 
 ## Relationship to other repos
 
-| Concern | `bitcoin-retry-endpoint` (this repo) | `bitcoin-listener` | `bitcoin-ingress` |
+| Concern | `bitcoin-retransmission` (this repo) | `bitcoin-listener` | `bitcoin-ingress` |
 |---------------|--------------------------------------|--------------------|-------------------|
 | Direction | RX NACK → TX re-multicast | RX multicast | TX multicast |
 | Primary iface | `mc_iface` (receive) | `ingress_iface` | `egress_iface` |
 | Metrics port | `:9400` | `:9200` | `:9100` |
 | Listen port | `9300` (NACK receive) | `9001` | `9000` |
-| Egress port | `9100` (re-multicast) | `egress_addr` | N/A |
+| Egress port | `9001` (re-multicast) | `egress_addr` | `9001` (multicast) |
 | BGP | **No** | Optional | Optional |
 | Firewall | Simplified UDP | Full perimeter | n/a |
 
