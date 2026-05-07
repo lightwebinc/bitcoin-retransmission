@@ -118,6 +118,11 @@ table inet bitcoin-retry-endpoint {
         oifname != "{{ firewall_fabric_iface }}" udp dport { 53, 123 } accept
         oifname != "{{ firewall_fabric_iface }}" tcp dport { 53, 80, 443 } accept
 
+{% if redis_addr | default('') | length > 0 %}
+        # Redis dedup/cache — outbound TCP to {{ redis_addr }} on management interface
+        oifname != "{{ firewall_fabric_iface }}" tcp dport {{ redis_addr.split(':') | last }} accept
+{% endif %}
+
         counter drop
     }
 
