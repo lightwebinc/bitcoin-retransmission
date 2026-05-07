@@ -35,8 +35,9 @@ mc_base_addr: ""              # Optional assigned prefix base
 
 # Cache configuration
 cache_backend: "memory"        # memory | redis
-redis_addr: ""                # Redis address (if cache_backend=redis)
+redis_addr: ""                # Redis address (if cache_backend=redis; also enables dedup when cache_backend=memory)
 cache_ttl: "60s"              # Cache TTL
+dedup_window: "60s"           # Cross-instance retransmit dedup window (requires redis_addr)
 cache_max_keys: 100000        # Maximum cache entries
 
 # Rate limiting

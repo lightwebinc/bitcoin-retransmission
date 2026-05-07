@@ -92,3 +92,70 @@ lxc exec retry-endpoint-01 -- journalctl -u bitcoin-retry-endpoint -f
 
 To deploy multiple retry-endpoint nodes, repeat the container creation steps
 with different names and add them all to the Ansible inventory.
+
+## Redis dedup tier
+
+For cross-instance retransmit deduplication, deploy a Redis VM on the management
+network and point all retry endpoints at it via `REDIS_ADDR`.
+
+### Launch Redis VM (management-only, ubuntu-small-single profile)
+
+```bash
+lxc launch ubuntu:24.04 redis --vm --profile ubuntu-small-single
+```
+
+Configure static IP via netplan (`/etc/netplan/99-lab.yaml` inside VM):
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    enp5s0:
+      addresses: [10.10.10.40/24]
+      routes:
+        - to: default
+          via: 10.10.10.1
+      nameservers:
+        addresses: [1.1.1.1, 8.8.8.8]
+```
+
+### Deploy Redis via Ansible
+
+The `redis` role (in `roles/redis/`) installs and configures `redis-server`:
+
+```bash
+cd ~/repo/bitcoin-retransmission/ansible
+ansible-playbook -i ~/repo/bitcoin-multicast-test/ansible/retry-hosts.yml \
+  site.yml --limit redis_nodes --tags redis
+```
+
+Smoke-test:
+
+```bash
+lxc exec redis -- redis-cli -h 10.10.10.40 ping   # expect: PONG
+```
+
+### Configure retry endpoints to use Redis dedup
+
+Set `REDIS_ADDR=10.10.10.40:6379` and keep `CACHE_BACKEND=memory`. This gives
+per-instance frame cache (scenario isolation preserved) with shared dedup:
+
+```yaml
+# In ansible/retry-hosts.yml host vars for retry1/2/3:
+redis_addr: "10.10.10.40:6379"
+dedup_window: "60s"
+```
+
+Redeploy retry endpoints:
+
+```bash
+ansible-playbook -i ~/repo/bitcoin-multicast-test/ansible/retry-hosts.yml \
+  site.yml --limit retry_endpoint_nodes --tags bitcoin-retry-endpoint
+```
+
+Verify dedup is active (log line on startup):
+
+```bash
+lxc exec retry1 -- journalctl -u bitcoin-retry-endpoint | grep dedup
+# expect: msg="cross-instance dedup enabled" addr=10.10.10.40:6379
+```

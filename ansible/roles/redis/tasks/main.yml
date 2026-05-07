@@ -1,0 +1,26 @@
+---
+- name: Install redis-server
+  ansible.builtin.apt:
+    name: redis-server
+    state: present
+    update_cache: true
+
+- name: Bind Redis to management interface
+  ansible.builtin.lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^bind '
+    line: "bind {{ redis_bind_addr }} 127.0.0.1"
+  notify: Restart Redis
+
+- name: Disable protected-mode (required for non-loopback bind)
+  ansible.builtin.lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^protected-mode '
+    line: "protected-mode no"
+  notify: Restart Redis
+
+- name: Enable and start redis-server
+  ansible.builtin.systemd:
+    name: redis-server
+    enabled: true
+    state: started

@@ -1,4 +1,16 @@
 ---
+- name: Deploy Redis cache node
+  hosts: redis_nodes
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: common
+      tags: [common]
+
+    - role: redis
+      tags: [redis]
+
 - name: Deploy bitcoin-retry-endpoint nodes
   hosts: retry_endpoint_nodes
   become: true

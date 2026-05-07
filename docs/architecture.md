@@ -38,14 +38,21 @@ missing data.
 
 ## Cache backends
 
-| Backend | Description | Use case |
-|----------|---------------------------|--------------------------------------|
-| `memory` | In-memory cache (default) | Single-node deployments, labs |
-| `redis` | External Redis cluster | Multi-node deployments, shared cache |
+| `CACHE_BACKEND` | `REDIS_ADDR` | Frame cache | Dedup | Use case |
+|-----------------|-------------|-------------|-------|----------|
+| `memory` | empty | freecache (per-instance) | none | Single-node; default |
+| `memory` | set | freecache (per-instance) | Redis SET NX | Multi-node; per-instance frames + shared dedup |
+| `redis` | set (required) | Redis (shared) | Redis SET NX | Multi-node; fully shared cache + dedup |
 
-When `cache_backend=redis`, all retry-endpoint nodes share the same cache,
-allowing any node to satisfy a NACK regardless of which listener originally
-sent it.
+The `memory` + `REDIS_ADDR` mode (row 2) is used in the lax LXD lab:
+retry1/2/3 each maintain their own frame cache (preserving scenario 13's
+MISS-escalation logic), while Redis deduplicates redundant retransmits
+when all three endpoints receive NACKs for the same gap simultaneously.
+
+When `REDIS_ADDR` is empty and `CACHE_BACKEND=redis`, startup fails with
+an explicit error. When `CACHE_BACKEND=memory` and `REDIS_ADDR` is set,
+a separate Redis connection is opened with the `bre:dedup:` key prefix
+(distinct from the `bre:frame:` prefix used for full Redis frame storage).
 
 ## Control plane
 
