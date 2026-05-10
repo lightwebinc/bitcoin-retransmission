@@ -56,7 +56,7 @@ beacon_enabled: true          # Enable ADVERT beacon multicasting
 beacon_tier: 0                # 0 = closest to source
 beacon_preference: 128        # Weighting within tier; higher = more preferred
 beacon_interval: "60s"        # Beacon multicast interval
-beacon_scope: "site"          # site | global | both
+beacon_scope: "site"          # site | org | global | both | all
 beacon_flags_unicast: false   # Advertise unicast retransmit capability
 beacon_flags_multicast: true  # Advertise multicast retransmit capability
 beacon_flags_draining: false  # Set true during planned maintenance
