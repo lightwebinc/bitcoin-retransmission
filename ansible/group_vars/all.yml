@@ -31,7 +31,7 @@ egress_port: 9001             # UDP port for retransmission multicast (matches l
 # Multicast configuration
 shard_bits: 2
 mc_scope: "site"              # link | site | org | global
-mc_base_addr: ""              # Optional assigned prefix base
+mc_group_id: "0x000B"              # IANA group-id (default 0x000B = IANA Bitcoin)
 
 # Cache configuration
 cache_backend: "memory"        # memory | redis
